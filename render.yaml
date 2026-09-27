@@ -1,0 +1,25 @@
+# Render Blueprint - deploy KeyServer 1 click
+# Render Dashboard -> New -> Blueprint -> chon repo nay
+services:
+  - type: web
+    name: keyserver
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: LINK4M_API
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: KEY_TTL_HOURS
+        value: "48"
+      - key: ADMIN_KEY
+        sync: false
+      - key: DISCORD_WEBHOOK
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
