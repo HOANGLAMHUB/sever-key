@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIKE HUB — Nhận Key</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(1000px 500px at 50% -10%, #12233a 0%, #080a0f 55%) , #080a0f;
+    color: #f2f5fc; padding: 20px;
+  }
+  .card {
+    width: 100%; max-width: 440px; background: #0d1017; border: 1px solid #28324a;
+    border-radius: 18px; padding: 36px 30px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(88,196,255,.06);
+  }
+  .logo {
+    width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%;
+    background: rgba(88,196,255,.1); border: 1px solid rgba(88,196,255,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 900; color: #78dcff;
+  }
+  h1 { font-size: 24px; letter-spacing: 2px; }
+  .sub { color: #50607a; font-size: 12px; margin: 6px 0 20px; letter-spacing: 1px; }
+  .desc { color: #949eb4; font-size: 14px; margin-bottom: 14px; line-height: 1.5; }
+  .desc.small { font-size: 12px; color: #50607a; margin: 12px 0 0; }
+  .hwid {
+    background: #12162a; border: 1px solid #28324a; border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; color: #949eb4; margin-bottom: 16px;
+    word-break: break-all;
+  }
+  .hwid span { color: #78dcff; font-family: monospace; }
+  button {
+    width: 100%; padding: 14px; border: none; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, #2a6fd6, #58c4ff); color: #fff;
+    font-size: 15px; font-weight: 800; letter-spacing: 1px;
+    transition: transform .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.copy { background: linear-gradient(135deg, #1e6e52, #48eba8); margin-top: 12px; }
+  .key {
+    background: #12162a; border: 1px dashed #58c4ff; border-radius: 12px;
+    padding: 16px 10px; font-family: monospace; font-size: 19px; font-weight: 700;
+    color: #78dcff; letter-spacing: 1px; word-break: break-all; user-select: all;
+  }
+  .exp { margin-top: 12px; font-size: 13px; color: #949eb4; }
+  .exp span { color: #48eba8; font-weight: 700; }
+  .msg { margin-top: 12px; font-size: 13px; min-height: 18px; color: #949eb4; }
+  .msg.err { color: #ff6473; }
+  .msg.ok { color: #48eba8; }
+  .badge {
+    display: inline-block; font-size: 11px; color: #48eba8; background: rgba(72,235,168,.1);
+    border: 1px solid rgba(72,235,168,.35); padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">S</div>
+  <h1>SIKE HUB</h1>
+  <p class="sub">KEY SYSTEM • MỖI MÁY 1 KEY • HẠN 48H</p>
+
+  <div id="box-init">
+    <div class="badge">✔ ĐÃ VƯỢT LINK THÀNH CÔNG</div>
+    <p class="desc">Bấm nút bên dưới để tạo key cho máy của bạn.</p>
+    <div class="hwid">HWID: <span id="hwid">...</span></div>
+    <button id="btn">NHẬN KEY</button>
+    <p id="msg" class="msg"></p>
+  </div>
+
+  <div id="box-key" style="display:none">
+    <p class="desc">Key của bạn (hạn 48 giờ):</p>
+    <div class="key" id="key">...</div>
+    <button class="copy" id="copy">📋 COPY KEY</button>
+    <p class="exp">Hết hạn: <span id="exp"></span></p>
+    <p class="desc small">Mở lại game, dán key này vào script SIKE HUB để sử dụng.<br>Mỗi máy chỉ có 1 key duy nhất.</p>
+  </div>
+
+  <div id="box-err" style="display:none">
+    <p class="msg err" id="err"></p>
+    <p class="desc small">Hãy bấm nút <b>GET KEY</b> trong script để lấy link mới,<br>vượt link rồi quay lại đây.</p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  SỬA DÒNG NÀY: link server Render của bạn (KHÔNG có / ở cuối)
+//  VD: https://sikehub-keyserver.onrender.com
+// ============================================================
+const SERVER_URL = "https://getkeyhub.onrender.com";
+
+const qs = new URLSearchParams(location.search);
+const hwid = (qs.get("hwid") || "").trim();
+const token = (qs.get("token") || "").trim();
+
+const $ = id => document.getElementById(id);
+
+function showErr(msg) {
+  $("box-init").style.display = "none";
+  $("box-key").style.display = "none";
+  $("box-err").style.display = "block";
+  $("err").textContent = "✘ " + msg;
+}
+
+if (!hwid || !/^[a-f0-9]{32}$/.test(token)) {
+  showErr("Link thiếu thông tin. Bạn cần lấy link từ trong script.");
+} else {
+  $("hwid").textContent = hwid.length > 28 ? hwid.slice(0, 14) + "..." + hwid.slice(-10) : hwid;
+
+  $("btn").onclick = async () => {
+    const btn = $("btn"), msg = $("msg");
+    btn.disabled = true;
+    msg.className = "msg";
+    msg.textContent = "Đang tạo key...";
+    try {
+      const r = await fetch(`${SERVER_URL}/api/redeem?hwid=${encodeURIComponent(hwid)}&token=${token}`);
+      const d = await r.json();
+      if (d.status === "success" && d.key) {
+        $("box-init").style.display = "none";
+        $("box-key").style.display = "block";
+        $("key").textContent = d.key;
+        $("exp").textContent = new Date(d.expiresAt).toLocaleString("vi-VN") + (d.reused ? " (key cũ còn hạn)" : "");
+      } else {
+        showErr(d.message || "Lỗi không xác định.");
+      }
+    } catch (e) {
+      btn.disabled = false;
+      msg.className = "msg err";
+      msg.textContent = "Không kết nối được server. Chờ 30s rồi thử lại.";
+    }
+  };
+
+  $("copy").onclick = async () => {
+    const key = $("key").textContent.trim();
+    const btn = $("copy");
+    try {
+      await navigator.clipboard.writeText(key);
+    } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = key; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove();
+    }
+    btn.textContent = "✔ ĐÃ COPY!";
+    setTimeout(() => btn.textContent = "📋 COPY KEY", 2000);
+  };
+}
+</script>
+</body>
+  </html>
+                                                    

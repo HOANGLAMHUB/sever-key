@@ -1,1 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIKE HUB — Admin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    min-height: 100vh; background: radial-gradient(1000px 500px at 50% -10%, #12233a 0%, #080a0f 55%), #080a0f;
+    color: #f2f5fc; padding: 30px 16px 60px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(88,196,255,.1); border: 1px solid rgba(88,196,255,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 900; color: #78dcff;
+  }
+  h1 { font-size: 20px; letter-spacing: 1px; }
+  .sub { color: #50607a; font-size: 12px; letter-spacing: 1px; }
 
+  #gate { max-width: 380px; margin: 60px auto; background: #0d1017; border: 1px solid #28324a; border-radius: 16px; padding: 28px; text-align: center; }
+  #gate p { color: #949eb4; font-size: 13px; margin-bottom: 14px; }
+  input {
+    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #28324a;
+    background: #12162a; color: #f2f5fc; font-size: 14px; margin-bottom: 10px; outline: none;
+  }
+  input:focus { border-color: #58c4ff; }
+  button {
+    padding: 11px 16px; border: none; border-radius: 10px; cursor: pointer;
+    background: linear-gradient(135deg, #2a6fd6, #58c4ff); color: #fff;
+    font-size: 13px; font-weight: 800; letter-spacing: .5px; transition: transform .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.danger { background: linear-gradient(135deg, #a8283d, #ff6473); }
+  button.ghost { background: #12162a; border: 1px solid #28324a; }
+  button.small { padding: 6px 10px; font-size: 11px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: #0d1017; border: 1px solid #28324a; border-radius: 14px; padding: 16px; }
+  .card .n { font-size: 26px; font-weight: 800; color: #78dcff; }
+  .card .l { font-size: 11px; color: #50607a; letter-spacing: .5px; margin-top: 4px; }
+  .card.warn .n { color: #ffb84d; }
+
+  .panel { background: #0d1017; border: 1px solid #28324a; border-radius: 14px; padding: 18px; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 160px; margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid #1a2033; white-space: nowrap; }
+  th { color: #50607a; font-weight: 700; letter-spacing: .5px; font-size: 11px; }
+  td.mono { font-family: monospace; color: #78dcff; }
+  td.hwid { color: #949eb4; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  td.exp.soon { color: #ffb84d; }
+  .actions { display: flex; gap: 6px; }
+  .empty { text-align: center; color: #50607a; padding: 30px 0; font-size: 13px; }
+  .msg { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .msg.err { color: #ff6473; } .msg.ok { color: #48eba8; }
+  .scrollx { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="gate">
+  <div class="logo" style="margin:0 auto 14px">S</div>
+  <h1 style="margin-bottom:4px">SIKE HUB ADMIN</h1>
+  <p>Nhập admin key để vào bảng quản lý.</p>
+  <input id="adminKeyInput" type="password" placeholder="Admin key...">
+  <button id="btnEnter" style="width:100%">VÀO DASHBOARD</button>
+  <p class="msg err" id="gateMsg"></p>
+</div>
+
+<div id="dash" style="display:none">
+  <header>
+    <div class="logo">S</div>
+    <div>
+      <h1>SIKE HUB — Admin Dashboard</h1>
+      <p class="sub">QUẢN LÝ KEY • REVOKE • GIA HẠN</p>
+    </div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px">
+      <span id="storageBadge" class="badge" style="display:inline-block;font-size:11px;color:#48eba8;background:rgba(72,235,168,.1);border:1px solid rgba(72,235,168,.35);padding:4px 10px;border-radius:20px"></span>
+      <button class="ghost small" id="btnRefresh">↻ Refresh</button>
+      <button class="ghost small" id="btnLogout">Đăng xuất</button>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card"><div class="n" id="cActive">–</div><div class="l">KEY ĐANG HOẠT ĐỘNG</div></div>
+    <div class="card warn"><div class="n" id="cSoon">–</div><div class="l">SẮP HẾT HẠN (&lt;6H)</div></div>
+    <div class="card"><div class="n" id="cIssued">–</div><div class="l">TỔNG KEY ĐÃ CẤP</div></div>
+    <div class="card"><div class="n" id="cPending">–</div><div class="l">LINK ĐANG CHỜ VƯỢT</div></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="toolbar" style="margin-bottom:6px">
+      <input id="manualHwid" placeholder="HWID người nhận (bắt buộc)">
+      <input id="manualHours" type="number" placeholder="Số giờ (mặc định 48)" style="max-width:160px">
+      <button id="btnCreate">+ Cấp key thủ công</button>
+    </div>
+    <p class="msg" id="createMsg"></p>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <input id="search" placeholder="Tìm theo key hoặc HWID...">
+      <button class="ghost" id="btnSearch">Tìm</button>
+    </div>
+    <div class="scrollx">
+      <table>
+        <thead><tr><th>Key</th><th>HWID</th><th>Cấp lúc</th><th>Hết hạn</th><th>Thao tác</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyMsg" style="display:none">Không có key nào.</div>
+    <p class="msg" id="rowMsg"></p>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+//  SỬA DÒNG NÀY nếu SERVER_URL khác (giống getkey.html)
+// ============================================================
+const SERVER_URL = "https://getkeyhub.onrender.com";
+
+const $ = id => document.getElementById(id);
+let adminKey = localStorage.getItem("sikehub_admin_key") || "";
+
+function fmt(ts) { return ts ? new Date(ts).toLocaleString("vi-VN") : "–"; }
+
+async function callAdmin(path) {
+  const sep = path.includes("?") ? "&" : "?";
+  const r = await fetch(`${SERVER_URL}${path}${sep}admin=${encodeURIComponent(adminKey)}`);
+  return r.json();
+}
+
+async function enterDashboard() {
+  const d = await callAdmin("/api/admin/stats");
+  if (d.status !== "success") {
+    $("gateMsg").textContent = "✘ " + (d.message || "Sai admin key.");
+    return false;
+  }
+  localStorage.setItem("sikehub_admin_key", adminKey);
+  $("gate").style.display = "none";
+  $("dash").style.display = "block";
+  renderStats(d);
+  loadKeys();
+  return true;
+}
+
+function renderStats(d) {
+  $("cActive").textContent = d.activeKeys;
+  $("cSoon").textContent = d.expiringSoon;
+  $("cIssued").textContent = d.totalIssued;
+  $("cPending").textContent = d.pendingLinks;
+  const badge = $("storageBadge");
+  if (d.storage === "upstash-redis") {
+    badge.textContent = "● Redis (bền vững)";
+  } else {
+    badge.textContent = "● File cục bộ";
+    badge.style.color = "#ffb84d"; badge.style.background = "rgba(255,184,77,.1)"; badge.style.borderColor = "rgba(255,184,77,.35)";
+  }
+}
+
+async function loadKeys(q) {
+  const d = await callAdmin("/api/admin/keys" + (q ? `?q=${encodeURIComponent(q)}` : ""));
+  if (d.status !== "success") { $("rowMsg").className = "msg err"; $("rowMsg").textContent = "✘ " + d.message; return; }
+  const rows = $("rows");
+  rows.innerHTML = "";
+  $("emptyMsg").style.display = d.keys.length ? "none" : "block";
+  const now = Date.now();
+  for (const k of d.keys) {
+    const soon = k.expiresAt - now < 6 * 3600 * 1000;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${k.key}</td>
+      <td class="hwid" title="${k.hwid}">${k.hwid}</td>
+      <td>${fmt(k.createdAt)}</td>
+      <td class="exp ${soon ? "soon" : ""}">${fmt(k.expiresAt)}</td>
+      <td class="actions">
+        <button class="ghost small" data-act="extend" data-key="${k.key}">+24h</button>
+        <button class="danger small" data-act="revoke" data-key="${k.key}">Revoke</button>
+      </td>`;
+    rows.appendChild(tr);
+  }
+}
+
+$("rows").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  const key = btn.dataset.key, act = btn.dataset.act;
+  btn.disabled = true;
+  const d = await callAdmin(`/api/admin/${act}?key=${encodeURIComponent(key)}`);
+  $("rowMsg").className = "msg " + (d.status === "success" ? "ok" : "err");
+  $("rowMsg").textContent = (d.status === "success" ? "✔ " : "✘ ") + (d.message || (act === "extend" ? "Đã gia hạn." : ""));
+  await refreshAll();
+});
+
+async function refreshAll() {
+  const d = await callAdmin("/api/admin/stats");
+  if (d.status === "success") renderStats(d);
+  await loadKeys($("search").value.trim());
+}
+
+$("btnEnter").onclick = async () => {
+  adminKey = $("adminKeyInput").value.trim();
+  if (!adminKey) return;
+  $("btnEnter").disabled = true;
+  await enterDashboard();
+  $("btnEnter").disabled = false;
+};
+$("adminKeyInput").addEventListener("keydown", e => { if (e.key === "Enter") $("btnEnter").click(); });
+
+$("btnCreate").onclick = async () => {
+  const hwid = $("manualHwid").value.trim();
+  const hours = $("manualHours").value.trim();
+  const msg = $("createMsg");
+  if (!hwid) { msg.className = "msg err"; msg.textContent = "✘ Thiếu HWID."; return; }
+  $("btnCreate").disabled = true;
+  const d = await callAdmin(`/api/admin/create?hwid=${encodeURIComponent(hwid)}${hours ? `&hours=${encodeURIComponent(hours)}` : ""}`);
+  $("btnCreate").disabled = false;
+  if (d.status === "success") {
+    msg.className = "msg ok";
+    msg.textContent = `✔ Đã cấp: ${d.key} (hết hạn ${fmt(d.expiresAt)})`;
+    $("manualHwid").value = ""; $("manualHours").value = "";
+    await refreshAll();
+  } else {
+    msg.className = "msg err";
+    msg.textContent = "✘ " + d.message;
+  }
+};
+
+$("btnRefresh").onclick = refreshAll;
+$("btnSearch").onclick = () => loadKeys($("search").value.trim());
+$("search").addEventListener("keydown", e => { if (e.key === "Enter") loadKeys($("search").value.trim()); });
+$("btnLogout").onclick = () => {
+  localStorage.removeItem("sikehub_admin_key");
+  adminKey = ""; $("adminKeyInput").value = "";
+  $("dash").style.display = "none"; $("gate").style.display = "block";
+};
+
+// tu dong vao neu da luu admin key truoc do
+if (adminKey) enterDashboard();
+</script>
+</body>
+</html>
